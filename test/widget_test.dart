@@ -44,6 +44,15 @@ void main() {
     await tester.tap(find.byIcon(Icons.arrow_back));
     await tester.pumpAndSettle();
 
+    await tester.enterText(find.byType(TextField).first, 'fit@example.com');
+    await tester.tap(find.text('Forgot Password'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('fit@example.com'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.arrow_back));
+    await tester.pumpAndSettle();
+
     await tester.tap(find.widgetWithText(TextButton, 'Sign Up'));
     await tester.pumpAndSettle();
 

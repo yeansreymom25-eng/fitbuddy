@@ -32,6 +32,11 @@ class AuthService {
     }
   }
 
+  Future<void> applyEmailVerificationCode(String code) async {
+    await _auth.applyActionCode(code.trim());
+    await reloadCurrentUser();
+  }
+
   Future<void> reloadCurrentUser() => _auth.currentUser?.reload() ?? Future.value();
 
   Future<void> signOut() => _auth.signOut();
