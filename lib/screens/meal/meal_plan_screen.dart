@@ -127,12 +127,21 @@ class _MealHeader extends StatelessWidget {
               ],
             ),
           ),
-          IconButton(
-            tooltip: 'Reminders',
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const RemindersScreen()),
+        IconButton(
+            tooltip: '',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const RemindersScreen()),
+              );
+            },
+            icon: const Icon(
+              Icons.notifications_none_rounded,
+              color: MealPlanColors.green,
             ),
-            icon: const Icon(Icons.notifications_none_rounded),
+            style: IconButton.styleFrom(
+              backgroundColor: MealPlanColors.softGreen,
+              shape: const CircleBorder(),
+            ),
           ),
         ],
       ),
@@ -279,16 +288,38 @@ class _MealPlanCard extends StatelessWidget {
               ],
             ),
           ),
-          IconButton(
-            tooltip: 'How to cook',
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                    builder: (_) => _MealDetailScreen(meal: meal)),
-              );
-            },
-            icon: const Icon(Icons.chevron_right_rounded),
-            color: MealPlanColors.iconGrey,
+          Tooltip(
+            message: 'How to cook',
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: MealPlanColors.softGreen),
+              boxShadow: [
+                BoxShadow(
+                  color: MealPlanColors.green.withValues(alpha: 0.18),
+                  blurRadius: 14,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            textStyle: const TextStyle(
+              color: MealPlanColors.green,
+              fontSize: 12,
+              fontWeight: FontWeight.w900,
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            preferBelow: true,
+            child: IconButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => _MealDetailScreen(meal: meal),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.chevron_right_rounded),
+              color: MealPlanColors.iconGrey,
+            ),
           ),
         ],
       ),

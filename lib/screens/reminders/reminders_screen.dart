@@ -55,9 +55,61 @@ class _RemindersScreenState extends State<RemindersScreen> {
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
         behavior: SnackBarBehavior.floating,
+        backgroundColor: Colors.white,
+        elevation: 8,
+        margin: EdgeInsets.only(
+          left: 18,
+          right: 18,
+          bottom: MediaQuery.of(context).size.height - 170,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: _ReminderColors.softGreen),
+        ),
         duration: const Duration(seconds: 2),
+        content: Row(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: const BoxDecoration(
+                color: _ReminderColors.softGreen,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.check_rounded,
+                color: _ReminderColors.green,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(
+                  color: Colors.black,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+            InkWell(
+              onTap: () {
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              },
+              borderRadius: BorderRadius.circular(99),
+              child: const Padding(
+                padding: EdgeInsets.all(4),
+                child: Icon(
+                  Icons.close_rounded,
+                  color: _ReminderColors.green,
+                  size: 20,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -598,7 +650,15 @@ class _ReminderRow extends StatelessWidget {
                 ),
               ),
               PopupMenuButton<String>(
-                tooltip: 'Reminder actions',
+                tooltip: '',
+                color: Colors.white,
+                elevation: 10,
+                shadowColor: _ReminderColors.green.withValues(alpha: 0.18),
+                surfaceTintColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  side: const BorderSide(color: _ReminderColors.softGreen),
+                ),
                 onSelected: (value) {
                   if (value == 'edit') {
                     onEdit();
@@ -607,10 +667,46 @@ class _ReminderRow extends StatelessWidget {
                   }
                 },
                 itemBuilder: (context) => const [
-                  PopupMenuItem(value: 'edit', child: Text('Edit')),
-                  PopupMenuItem(value: 'delete', child: Text('Delete')),
+                  PopupMenuItem(
+                    value: 'edit',
+                    child: Row(
+                      children: [
+                        Icon(Icons.edit_rounded,
+                            size: 18, color: _ReminderColors.green),
+                        SizedBox(width: 10),
+                        Text(
+                          'Edit',
+                          style: TextStyle(
+                            color: _ReminderColors.green,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete_rounded,
+                            size: 18, color: Color(0xFFD62828)),
+                        SizedBox(width: 10),
+                        Text(
+                          'Delete',
+                          style: TextStyle(
+                            color: Color(0xFFD62828),
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
-                icon: const Icon(Icons.more_vert_rounded, size: 20),
+                icon: const Icon(
+                  Icons.more_vert_rounded,
+                  size: 20,
+                  color: _ReminderColors.green,
+                ),
               ),
               Switch(
                 value: reminder.enabled,

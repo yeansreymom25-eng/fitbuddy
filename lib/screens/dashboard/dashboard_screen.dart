@@ -77,16 +77,54 @@ class _DashboardBody extends StatelessWidget {
     return mins == 0 ? '${hours}h' : '${hours}h ${mins}m';
   }
 
-  void _message(BuildContext context, String text) {
+void _message(BuildContext context, String text) {
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(text),
         behavior: SnackBarBehavior.floating,
+        backgroundColor: Colors.white,
+        elevation: 8,
+        margin: EdgeInsets.only(
+          left: 18,
+          right: 18,
+          bottom: MediaQuery.of(context).size.height - 170,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Color(0xFFDDFBDD)),
+        ),
         duration: const Duration(seconds: 2),
+        content: Row(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: const BoxDecoration(
+                color: Color(0xFFDDFBDD),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.check_rounded,
+                color: Color(0xFF008A08),
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                text,
+                style: const TextStyle(
+                  color: Colors.black,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
-  }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -264,10 +302,18 @@ class _Header extends StatelessWidget {
             ),
           ),
           IconButton(
+            tooltip: '',
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const RemindersScreen()),
             ),
-            icon: const Icon(Icons.notifications_none_rounded),
+            icon: const Icon(
+              Icons.notifications_none_rounded,
+              color: DashboardColors.green,
+            ),
+            style: IconButton.styleFrom(
+              backgroundColor: DashboardColors.softGreen,
+              shape: const CircleBorder(),
+            ),
           ),
         ],
       ),

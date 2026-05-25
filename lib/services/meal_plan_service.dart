@@ -50,6 +50,7 @@ class MealPlanService {
     final key = dateKey(date);
     final doc = _doc(key);
     final snapshot = await doc.get();
+
     if (snapshot.exists) {
       final existing = DailyMealPlan.fromFirestore(snapshot);
       if (existing.meals.isNotEmpty) {
@@ -72,15 +73,19 @@ class MealPlanService {
     final goal = (profile?.healthGoal ?? 'Stay Active').toLowerCase();
     final country = (profile?.country ?? 'Cambodia').toLowerCase();
     final daySeed = date.difference(DateTime(2024, 1, 1)).inDays;
+
     final templates = country.contains('cambodia') || country.contains('khmer')
         ? _khmerTemplates
         : _templates;
+
     final template =
         templates[(daySeed + _goalOffset(goal)) % templates.length];
+
     final calorieScale = rec.dailyCalories / 1800;
 
     MealPlanItem mealFrom(Map<String, dynamic> map, double ratio) {
       final baseCalories = (rec.dailyCalories * ratio).round();
+
       return MealPlanItem(
         id: map['id'] as String,
         title: _goalTitle(goal, map['title'] as String),
@@ -198,7 +203,7 @@ const _templates = [
       'id': 'snack',
       'title': 'Apple Peanut Snack',
       'time': '4:00 PM',
-      'image': 'assets/images/dashboard/lunch.png',
+      'image': 'assets/images/dashboard/snack.png',
       'description': 'Apple slices with peanut butter and cinnamon',
       'ingredients': ['Apple', 'Peanut butter', 'Cinnamon'],
       'steps': [
@@ -274,7 +279,7 @@ const _templates = [
       'id': 'snack',
       'title': 'Cottage Cheese Berries',
       'time': '4:00 PM',
-      'image': 'assets/images/dashboard/lunch.png',
+      'image': 'assets/images/dashboard/snack.png',
       'description': 'Cottage cheese with berries and pumpkin seeds',
       'ingredients': ['Cottage cheese', 'Berries', 'Pumpkin seeds'],
       'steps': [
@@ -344,7 +349,7 @@ const _templates = [
       'id': 'snack',
       'title': 'Hummus Veggie Cup',
       'time': '4:00 PM',
-      'image': 'assets/images/dashboard/lunch.png',
+      'image': 'assets/images/dashboard/snack.png',
       'description': 'Hummus with carrots, cucumber, and whole grain crackers',
       'ingredients': ['Hummus', 'Carrots', 'Cucumber', 'Whole grain crackers'],
       'steps': [
@@ -405,7 +410,7 @@ const _khmerTemplates = [
       'id': 'snack',
       'title': 'Banana Peanut Snack',
       'time': '4:00 PM',
-      'image': 'assets/images/dashboard/lunch.png',
+      'image': 'assets/images/dashboard/snack.png',
       'description': 'Banana with peanuts for simple energy',
       'ingredients': ['Banana', 'Peanuts'],
       'steps': [
@@ -464,7 +469,7 @@ const _khmerTemplates = [
       'id': 'snack',
       'title': 'Fresh Fruit Cup',
       'time': '4:00 PM',
-      'image': 'assets/images/dashboard/lunch.png',
+      'image': 'assets/images/dashboard/snack.png',
       'description': 'Local fruit with yogurt if available',
       'ingredients': ['Banana', 'Apple', 'Yogurt'],
       'steps': ['Cut fruit.', 'Add yogurt.', 'Mix gently.', 'Serve cold.'],
@@ -517,7 +522,7 @@ const _khmerTemplates = [
       'id': 'snack',
       'title': 'Boiled Egg Snack',
       'time': '4:00 PM',
-      'image': 'assets/images/dashboard/lunch.png',
+      'image': 'assets/images/dashboard/snack.png',
       'description': 'Boiled egg with fruit',
       'ingredients': ['Egg', 'Banana'],
       'steps': [

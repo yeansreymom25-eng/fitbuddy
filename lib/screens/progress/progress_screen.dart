@@ -161,19 +161,19 @@ class _FoodHelperHeader extends StatelessWidget {
               ],
             ),
           ),
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: FoodHelperColors.softGreen,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: const Icon(
-              Icons.auto_awesome_rounded,
-              color: FoodHelperColors.green,
-              size: 23,
-            ),
+      Container(
+          width: 42,
+          height: 42,
+          decoration: const BoxDecoration(
+            color: FoodHelperColors.softGreen,
+            shape: BoxShape.circle,
           ),
+          child: const Icon(
+            Icons.auto_awesome_rounded,
+            color: FoodHelperColors.green,
+            size: 23,
+          ),
+        ),
         ],
       ),
     );
@@ -275,16 +275,35 @@ class _IngredientChips extends StatelessWidget {
       runSpacing: 8,
       children: [
         for (final ingredient in ingredients)
-          InputChip(
+         InputChip(
             label: Text(ingredient),
             onDeleted: () => onRemove(ingredient),
-            deleteIcon: const Icon(Icons.close_rounded, size: 16),
-            backgroundColor: FoodHelperColors.softGreen,
-            side: BorderSide.none,
-            labelStyle: const TextStyle(
-              color: FoodHelperColors.green,
-              fontSize: 12,
-              fontWeight: FontWeight.w900,
+            deleteIcon: Tooltip(
+              message: 'Delete',
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: FoodHelperColors.softGreen),
+                boxShadow: [
+                  BoxShadow(
+                    color: FoodHelperColors.green.withValues(alpha: 0.18),
+                    blurRadius: 14,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              textStyle: const TextStyle(
+                color: FoodHelperColors.green,
+                fontSize: 12,
+                fontWeight: FontWeight.w900,
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              preferBelow: true,
+              child: const Icon(
+                Icons.close_rounded,
+                size: 16,
+                color: FoodHelperColors.green,
+              ),
             ),
           ),
       ],

@@ -94,16 +94,68 @@ class _ProfileGoalScreenState extends State<ProfileGoalScreen> {
       ..['Photo Url'] = profile.photoUrl ?? '';
   }
 
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 2),
+ void _showMessage(String message) {
+  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      behavior: SnackBarBehavior.floating,
+      backgroundColor: Colors.white,
+      elevation: 8,
+      margin: EdgeInsets.only(
+        left: 18,
+        right: 18,
+        bottom: MediaQuery.of(context).size.height - 170,
       ),
-    );
-  }
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: Color(0xFFDDFBDD)),
+      ),
+      duration: const Duration(seconds: 2),
+      content: Row(
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: const BoxDecoration(
+              color: Color(0xFFDDFBDD),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.check_rounded,
+              color: Color(0xFF008A08),
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(
+                color: Colors.black,
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          InkWell(
+            onTap: () {
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            },
+            borderRadius: BorderRadius.circular(99),
+            child: const Padding(
+              padding: EdgeInsets.all(4),
+              child: Icon(
+                Icons.close_rounded,
+                color: Color(0xFF008A08),
+                size: 20,
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
 
   Future<void> _editValue(String label) async {
     if (label == 'Gender') {
@@ -146,7 +198,6 @@ class _ProfileGoalScreenState extends State<ProfileGoalScreen> {
         label: label,
         options: const [
           'Cambodia',
-          'Thailand',
           'Vietnam',
           'Korea',
           'Japan',
@@ -270,34 +321,39 @@ class _ProfileGoalScreenState extends State<ProfileGoalScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 4, 20, 22),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Edit $label',
-                  style: const TextStyle(
-                    color: Colors.black,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                for (final option in options)
-                  _ProfileChoiceTile(
-                    label: option,
-                    selected: option == currentValue,
-                    onTap: () => Navigator.pop(context, option),
-                  ),
-              ],
+ builder: (context) {
+  return SafeArea(
+    child: ConstrainedBox(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.72,
+      ),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(20, 4, 20, 22),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Edit $label',
+              style: const TextStyle(
+                color: Colors.black,
+                fontSize: 18,
+                fontWeight: FontWeight.w900,
+              ),
             ),
-          ),
-        );
-      },
+            const SizedBox(height: 14),
+            for (final option in options)
+              _ProfileChoiceTile(
+                label: option,
+                selected: option == currentValue,
+                onTap: () => Navigator.pop(context, option),
+              ),
+          ],
+        ),
+      ),
+    ),
+  );
+},
     );
 
     if (selected != null) {
@@ -771,12 +827,39 @@ class _ProfileHeader extends StatelessWidget {
                   ),
                 ),
               ),
-              IconButton(
-                tooltip: 'Log out',
-                onPressed: onLogout,
-                icon: const Icon(
-                  Icons.logout_rounded,
+            Tooltip(
+                message: 'Log out',
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: _ProfileColors.softGreen),
+                  boxShadow: [
+                    BoxShadow(
+                      color: _ProfileColors.green.withValues(alpha: 0.18),
+                      blurRadius: 14,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                textStyle: const TextStyle(
                   color: _ProfileColors.green,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                preferBelow: true,
+                child: IconButton(
+                  onPressed: onLogout,
+                  icon: const Icon(Icons.logout_rounded),
+                  color: _ProfileColors.green,
+                  splashColor: _ProfileColors.softGreen,
+                  highlightColor: _ProfileColors.softGreen,
+                  hoverColor: _ProfileColors.softGreen,
+                  focusColor: _ProfileColors.softGreen,
+                  style: IconButton.styleFrom(
+                    backgroundColor: _ProfileColors.softGreen,
+                    shape: const CircleBorder(),
+                  ),
                 ),
               ),
             ],

@@ -20,6 +20,7 @@ class _PersonalizeScreenState extends State<PersonalizeScreen> {
   String? weight;
   String? height;
   String? healthGoal;
+  String? country;
   bool isSaving = false;
 
   String get birthDateLabel {
@@ -110,6 +111,27 @@ class _PersonalizeScreenState extends State<PersonalizeScreen> {
       });
     }
   }
+
+  Future<void> chooseCountry() async {
+  final selected = await showOptionsSheet(
+    title: 'Country',
+    options: const [
+      'Cambodia',
+      'Vietnam',
+      'Korea',
+      'Japan',
+      'United States',
+      'Other',
+    ],
+    currentValue: country,
+  );
+
+  if (selected != null) {
+    setState(() {
+      country = selected;
+     });
+   }
+ }
 
   Future<String?> showOptionsSheet({
     required String title,
@@ -314,11 +336,12 @@ class _PersonalizeScreenState extends State<PersonalizeScreen> {
   }
 
   Future<void> continueNext() async {
-    final isComplete = gender != null &&
-        dateOfBirth != null &&
-        weight != null &&
-        height != null &&
-        healthGoal != null;
+      final isComplete = gender != null &&
+      dateOfBirth != null &&
+      weight != null &&
+      height != null &&
+      healthGoal != null &&
+      country != null;
 
     if (!isComplete) {
       showMessage(context, 'Please complete all fields first.');
@@ -345,6 +368,8 @@ class _PersonalizeScreenState extends State<PersonalizeScreen> {
         heightCm: heightCm,
         healthGoal: healthGoal!,
         targetWeightKg: null,
+        activityLevel: null,
+        country: country!,
         onboardingComplete: false,
       );
       await UserProfileService.instance.saveProfile(profile);
@@ -407,8 +432,13 @@ class _PersonalizeScreenState extends State<PersonalizeScreen> {
         subtitle: healthGoal ?? "What's your main goal?",
         onTap: chooseHealthGoal,
       ),
+      PreferenceOption(
+        icon: Icons.public,
+        title: 'Country',
+        subtitle: country ?? 'Select your country',
+        onTap: chooseCountry,
+      ),
     ];
-
     return AuthScaffold(
       decorated: false,
       horizontalPadding: 28,
