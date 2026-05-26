@@ -1,8 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
+import 'package:flutter_timezone/flutter_timezone.dart';
 
 import '../models/app_reminder.dart';
+import 'app_notification_service.dart';
 
 class NotificationService {
   NotificationService._();
@@ -14,21 +17,35 @@ class NotificationService {
   bool _ready = false;
 
   Future<void> initialize() async {
-    if (_ready) {
+    if (_ready || kIsWeb) {
       return;
     }
-    const android = AndroidInitializationSettings('@mipmap/ic_launcher');
-    const settings = InitializationSettings(android: android);
-    tz.initializeTimeZones();
-    await _plugin.initialize(settings);
-    await _plugin
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.requestNotificationsPermission();
-    _ready = true;
+    try {
+      const android = AndroidInitializationSettings('@mipmap/ic_launcher');
+      const settings = InitializationSettings(android: android);
+
+      tz.initializeTimeZones();
+      final timeZone = await FlutterTimezone.getLocalTimezone();
+      // Handle both String and TimezoneInfo (some versions return an object)
+      final String timeZoneName = timeZone is String ? timeZone : (timeZone as dynamic).name;
+      tz.setLocalLocation(tz.getLocation(timeZoneName));
+
+      await _plugin.initialize(settings);
+
+      final androidImplementation = _plugin
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>();
+
+      await androidImplementation?.requestNotificationsPermission();
+
+      _ready = true;
+    } catch (e) {
+      debugPrint('Notification initialization failed: $e');
+    }
   }
 
   Future<void> showReminder(AppReminder reminder) async {
+    if (kIsWeb) return;
     await initialize();
     await _plugin.show(
       reminder.id.hashCode,
@@ -36,17 +53,24 @@ class NotificationService {
       '${reminder.time} - ${reminder.note}',
       const NotificationDetails(
         android: AndroidNotificationDetails(
-          'fitbuddy_reminders',
+          'fitbuddy_reminders_quiet',
           'FitBuddy reminders',
           channelDescription: 'Meal, water, activity, and sleep reminders',
-          importance: Importance.high,
-          priority: Priority.high,
+          importance: Importance.defaultImportance,
+          priority: Priority.defaultPriority,
         ),
       ),
+    );
+
+    // Also create an in-app notification
+    await AppNotificationService.instance.createReminderNotification(
+      title: reminder.title,
+      message: reminder.note,
     );
   }
 
   Future<void> scheduleDaily(AppReminder reminder) async {
+    if (kIsWeb) return;
     await initialize();
     if (!reminder.enabled) {
       await cancel(reminder);
@@ -59,19 +83,20 @@ class NotificationService {
       _nextReminderTime(reminder.time),
       const NotificationDetails(
         android: AndroidNotificationDetails(
-          'fitbuddy_reminders',
+          'fitbuddy_reminders_quiet',
           'FitBuddy reminders',
           channelDescription: 'Meal, water, activity, and sleep reminders',
-          importance: Importance.max,
-          priority: Priority.high,
+          importance: Importance.defaultImportance,
+          priority: Priority.defaultPriority,
         ),
       ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       matchDateTimeComponents: DateTimeComponents.time,
     );
   }
 
   Future<void> cancel(AppReminder reminder) async {
+    if (kIsWeb) return;
     await _plugin.cancel(reminder.id.hashCode);
   }
 

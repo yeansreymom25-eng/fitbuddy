@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -79,12 +80,17 @@ class UserProfileService {
     required Uint8List bytes,
   }) async {
     final uid = currentUid;
-    final ref = _storage.ref('users/$uid/profile/$fileName');
-    await ref.putData(
-      bytes,
-      SettableMetadata(contentType: 'image/jpeg'),
-    );
-    final url = await ref.getDownloadURL();
+    String url;
+    try {
+      final ref = _storage.ref('users/$uid/profile/$fileName');
+      await ref.putData(
+        bytes,
+        SettableMetadata(contentType: 'image/jpeg'),
+      );
+      url = await ref.getDownloadURL();
+    } on FirebaseException {
+      url = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+    }
     await _userDoc(uid).set(
       {
         'photoUrl': url,

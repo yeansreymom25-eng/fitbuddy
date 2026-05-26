@@ -39,7 +39,7 @@ class _MealPlanScreenState extends State<MealPlanScreen> {
                   }
                   final plan = snapshot.data!;
                   return SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(22, 8, 22, 18),
+                    padding: const EdgeInsets.fromLTRB(22, 18, 22, 24),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -96,7 +96,7 @@ class _MealHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(22, 14, 22, 4),
+      padding: const EdgeInsets.fromLTRB(22, 24, 22, 8),
       child: Row(
         children: [
           const Expanded(
@@ -127,7 +127,7 @@ class _MealHeader extends StatelessWidget {
               ],
             ),
           ),
-        IconButton(
+          IconButton(
             tooltip: '',
             onPressed: () {
               Navigator.of(context).push(
@@ -398,11 +398,21 @@ class _MealDetailScreen extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 22),
-              const Text('Ingredients', style: _sectionStyle),
+              const _DetailSectionHeader(
+                title: 'Ingredients',
+                subtitle: 'Check these before you start cooking.',
+                icon: Icons.shopping_basket_rounded,
+              ),
               const SizedBox(height: 10),
               for (final item in meal.ingredients) _DetailBullet(text: item),
               const SizedBox(height: 22),
-              const Text('How to Cook', style: _sectionStyle),
+              _CookSummary(meal: meal),
+              const SizedBox(height: 14),
+              const _DetailSectionHeader(
+                title: 'How to Cook',
+                subtitle: 'Follow each step in order for a simple result.',
+                icon: Icons.soup_kitchen_rounded,
+              ),
               const SizedBox(height: 10),
               for (var i = 0; i < meal.steps.length; i++)
                 _CookingStep(number: i + 1, text: meal.steps[i]),
@@ -419,6 +429,53 @@ const _sectionStyle = TextStyle(
   fontSize: 18,
   fontWeight: FontWeight.w900,
 );
+
+class _DetailSectionHeader extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+
+  const _DetailSectionHeader({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: MealPlanColors.softGreen,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, color: MealPlanColors.green, size: 20),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: _sectionStyle),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: const TextStyle(
+                  color: MealPlanColors.textGrey,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
 
 class _NutritionTile extends StatelessWidget {
   final String label;
@@ -462,8 +519,14 @@ class _DetailBullet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 9),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: MealPlanColors.border),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       child: Row(
         children: [
           const Icon(Icons.check_circle_rounded,
@@ -479,6 +542,41 @@ class _DetailBullet extends StatelessWidget {
   }
 }
 
+class _CookSummary extends StatelessWidget {
+  final MealPlanItem meal;
+
+  const _CookSummary({required this.meal});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: MealPlanColors.softGreen,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: MealPlanColors.green.withValues(alpha: .14)),
+      ),
+      padding: const EdgeInsets.all(12),
+      child: Row(
+        children: [
+          const Icon(Icons.timer_rounded, color: MealPlanColors.green),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              '${meal.steps.length} simple steps. Prepare ingredients first, cook safely, and taste before serving.',
+              style: const TextStyle(
+                color: Colors.black,
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                height: 1.25,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _CookingStep extends StatelessWidget {
   final int number;
   final String text;
@@ -487,8 +585,14 @@ class _CookingStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: MealPlanColors.border),
+      ),
+      padding: const EdgeInsets.all(12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -558,9 +662,9 @@ class _MealNavBar extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Container(
-        height: 72,
+        height: 82,
         color: Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 10),
+        padding: const EdgeInsets.fromLTRB(10, 8, 10, 4),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
@@ -630,8 +734,8 @@ class _MealNavItem extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: color,
-                fontSize: 9,
-                fontWeight: isActive ? FontWeight.w900 : FontWeight.w700,
+                fontSize: 10,
+                fontWeight: isActive ? FontWeight.w900 : FontWeight.w800,
               ),
             ),
           ],
@@ -643,14 +747,14 @@ class _MealNavItem extends StatelessWidget {
 
 class MealPlanColors {
   static const page = Color(0xFFFFFFFF);
-  static const green = Color(0xFF008A08);
-  static const softGreen = Color(0xFFE5FBE8);
-  static const purple = Color(0xFF9C1BA6);
-  static const motivationPink = Color(0xFFECCFEB);
-  static const textGrey = Color(0xFF777777);
-  static const iconGrey = Color(0xFF8F8F96);
-  static const navGrey = Color(0xFFC4C4CA);
-  static const border = Color(0xFFD7D7D7);
+  static const green = Color(0xFF1F8A5B);
+  static const softGreen = Color(0xFFE7F6EE);
+  static const purple = Color(0xFF7B4CE0);
+  static const motivationPink = Color(0xFFF3E8F7);
+  static const textGrey = Color(0xFF66736B);
+  static const iconGrey = Color(0xFF8F9A94);
+  static const navGrey = Color(0xFF9AA49E);
+  static const border = Color(0xFFE0E5E0);
 
   const MealPlanColors._();
 }

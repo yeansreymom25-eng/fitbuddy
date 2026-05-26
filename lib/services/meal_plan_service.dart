@@ -5,6 +5,7 @@ import '../models/meal_plan.dart';
 import '../models/user_profile.dart';
 import 'date_key.dart';
 import 'user_profile_service.dart';
+import 'user_settings_service.dart';
 
 class MealPlanService {
   MealPlanService._();
@@ -59,7 +60,9 @@ class MealPlanService {
     }
 
     final profile = await UserProfileService.instance.getCurrentProfile();
-    final generated = _generatePlan(key, date, profile);
+    final preferences = await UserSettingsService.instance.getFoodPreferences();
+    final budget = await UserSettingsService.instance.getBudget();
+    final generated = _generatePlan(key, date, profile, preferences, budget);
     await doc.set(generated.toFirestore(), SetOptions(merge: true));
     return generated;
   }
@@ -68,15 +71,21 @@ class MealPlanService {
     String key,
     DateTime date,
     AppUserProfile? profile,
+    UserFoodPreferences preferences,
+    UserBudgetSettings budget,
   ) {
     final rec = profile?.recommendations ?? UserRecommendations.fromMap(null);
     final goal = (profile?.healthGoal ?? 'Stay Active').toLowerCase();
     final country = (profile?.country ?? 'Cambodia').toLowerCase();
     final daySeed = date.difference(DateTime(2024, 1, 1)).inDays;
 
-    final templates = country.contains('cambodia') || country.contains('khmer')
-        ? _khmerTemplates
-        : _templates;
+    final vegetarian = preferences.dietStyle.toLowerCase() == 'vegetarian' ||
+        preferences.preferredProtein.toLowerCase() == 'tofu';
+    final templates = vegetarian
+        ? _vegetarianTemplates
+        : country.contains('cambodia') || country.contains('khmer')
+            ? _khmerTemplates
+            : _templates;
 
     final template =
         templates[(daySeed + _goalOffset(goal)) % templates.length];
@@ -88,7 +97,11 @@ class MealPlanService {
 
       return MealPlanItem(
         id: map['id'] as String,
-        title: _goalTitle(goal, map['title'] as String),
+        title: _personalizedTitle(
+          goal: goal,
+          title: map['title'] as String,
+          budget: budget,
+        ),
         time: map['time'] as String,
         image: map['image'] as String,
         calories: baseCalories,
@@ -96,9 +109,17 @@ class MealPlanService {
         protein: ((baseCalories * (goal == 'build muscle' ? 0.32 : 0.25)) / 4)
             .round(),
         fat: ((baseCalories * 0.28) / 9).round(),
-        description: _goalDescription(goal, map['description'] as String),
-        ingredients: (map['ingredients'] as List<String>),
-        steps: (map['steps'] as List<String>),
+        description: _personalizedDescription(
+          goal: goal,
+          description: map['description'] as String,
+          preferences: preferences,
+          budget: budget,
+        ),
+        ingredients: _filteredIngredients(
+          map['ingredients'] as List<String>,
+          preferences,
+        ),
+        steps: _personalizedSteps(map['steps'] as List<String>, preferences),
       );
     }
 
@@ -154,7 +175,136 @@ class MealPlanService {
     }
     return description;
   }
+
+  String _personalizedTitle({
+    required String goal,
+    required String title,
+    required UserBudgetSettings budget,
+  }) {
+    final goalTitle = _goalTitle(goal, title);
+    if (budget.shoppingStyle.toLowerCase() == 'low cost') {
+      return 'Budget $goalTitle';
+    }
+    return goalTitle;
+  }
+
+  String _personalizedDescription({
+    required String goal,
+    required String description,
+    required UserFoodPreferences preferences,
+    required UserBudgetSettings budget,
+  }) {
+    final notes = <String>[_goalDescription(goal, description)];
+    if (preferences.dietStyle != 'Balanced') {
+      notes.add(
+          'Adjusted for ${preferences.dietStyle.toLowerCase()} preference');
+    }
+    if (budget.shoppingStyle.toLowerCase() == 'low cost') {
+      notes.add('Uses simple budget-friendly ingredients');
+    }
+    if (preferences.allergies.isNotEmpty ||
+        preferences.dislikedFoods.isNotEmpty) {
+      final avoid = [
+        ...preferences.allergies,
+        ...preferences.dislikedFoods,
+      ].join(', ');
+      notes.add('Avoid: $avoid');
+    }
+    return notes.join('. ');
+  }
+
+  List<String> _filteredIngredients(
+    List<String> ingredients,
+    UserFoodPreferences preferences,
+  ) {
+    final avoid = [
+      ...preferences.allergies,
+      ...preferences.dislikedFoods,
+    ].map((item) => item.toLowerCase()).toList();
+    if (avoid.isEmpty) {
+      return ingredients;
+    }
+    final filtered = ingredients.where((ingredient) {
+      final lower = ingredient.toLowerCase();
+      return !avoid.any(lower.contains);
+    }).toList();
+    return filtered.isEmpty ? ingredients : filtered;
+  }
+
+  List<String> _personalizedSteps(
+    List<String> steps,
+    UserFoodPreferences preferences,
+  ) {
+    final result = List<String>.from(steps);
+    if (preferences.spiceLevel == 'Mild') {
+      result.add('Keep seasoning mild and taste before adding more spice.');
+    } else if (preferences.spiceLevel == 'Spicy') {
+      result.add('Add chili or pepper gradually to match your spice level.');
+    }
+    return result;
+  }
 }
+
+const _vegetarianTemplates = [
+  [
+    {
+      'id': 'breakfast',
+      'title': 'Egg Vegetable Rice Bowl',
+      'time': '7:00 AM',
+      'image': 'assets/images/dashboard/breakfast.png',
+      'description': 'Egg, rice, tomato, spinach, and light seasoning',
+      'ingredients': ['Egg', 'Rice', 'Tomato', 'Spinach', 'Pepper'],
+      'steps': [
+        'Warm the rice.',
+        'Cook egg until set.',
+        'Add tomato and spinach.',
+        'Serve together in a bowl.'
+      ],
+    },
+    {
+      'id': 'lunch',
+      'title': 'Tofu Rice Plate',
+      'time': '12:00 PM',
+      'image': 'assets/images/dashboard/lunch.png',
+      'description': 'Tofu with rice, cucumber, carrot, and greens',
+      'ingredients': ['Tofu', 'Rice', 'Cucumber', 'Carrot', 'Greens'],
+      'steps': [
+        'Cut tofu into cubes.',
+        'Cook tofu until golden.',
+        'Slice vegetables.',
+        'Serve tofu with rice and vegetables.'
+      ],
+    },
+    {
+      'id': 'snack',
+      'title': 'Fruit Yogurt Cup',
+      'time': '4:00 PM',
+      'image': 'assets/images/dashboard/snack.png',
+      'description': 'Fruit with yogurt and seeds',
+      'ingredients': ['Banana', 'Apple', 'Yogurt', 'Seeds'],
+      'steps': [
+        'Cut fruit.',
+        'Spoon yogurt into a cup.',
+        'Add fruit and seeds.',
+        'Serve chilled.'
+      ],
+    },
+    {
+      'id': 'dinner',
+      'title': 'Vegetable Tofu Soup',
+      'time': '6:30 PM',
+      'image': 'assets/images/dashboard/dinner.png',
+      'description': 'Clear soup with tofu, cabbage, carrot, and rice',
+      'ingredients': ['Tofu', 'Cabbage', 'Carrot', 'Rice', 'Garlic'],
+      'steps': [
+        'Boil water with garlic.',
+        'Add carrot and cabbage.',
+        'Add tofu near the end.',
+        'Serve warm with rice.'
+      ],
+    },
+  ],
+];
 
 const _templates = [
   [

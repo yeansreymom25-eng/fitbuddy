@@ -2,13 +2,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class AppColors {
-  static const green = Color(0xFF008A08);
-  static const paleGreen = Color(0xFFEAF8EA);
-  static const surfaceGreen = Color(0xFFF6FCF6);
-  static const softGreen = Color(0xFFDDFBDD);
-  static const textGrey = Color(0xFF777777);
-  static const border = Color(0xFFD8D8D8);
-  static const hint = Color(0xFFC7C7CC);
+  static const green = Color(0xFF1F8A5B);
+  static const paleGreen = Color(0xFFF4FAF6);
+  static const surfaceGreen = Color(0xFFFAFCFB);
+  static const softGreen = Color(0xFFE7F6EE);
+  static const textGrey = Color(0xFF66736B);
+  static const border = Color(0xFFE0E5E0);
+  static const hint = Color(0xFFADB8B1);
 
   const AppColors._();
 }

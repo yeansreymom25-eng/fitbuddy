@@ -1,9 +1,15 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../models/user_profile.dart';
 import '../../services/auth_service.dart';
 import '../../services/user_profile_service.dart';
+import 'achievement_feedback_screen.dart';
+import 'budget_screen.dart';
+import 'food_preference_screen.dart';
 import '../auth/login_screen.dart';
 import '../dashboard/dashboard_screen.dart';
 import '../meal/meal_plan_screen.dart';
@@ -94,68 +100,64 @@ class _ProfileGoalScreenState extends State<ProfileGoalScreen> {
       ..['Photo Url'] = profile.photoUrl ?? '';
   }
 
- void _showMessage(String message) {
-  ScaffoldMessenger.of(context).hideCurrentSnackBar();
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      behavior: SnackBarBehavior.floating,
-      backgroundColor: Colors.white,
-      elevation: 8,
-      margin: EdgeInsets.only(
-        left: 18,
-        right: 18,
-        bottom: MediaQuery.of(context).size.height - 170,
-      ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: Color(0xFFDDFBDD)),
-      ),
-      duration: const Duration(seconds: 2),
-      content: Row(
-        children: [
-          Container(
-            width: 34,
-            height: 34,
-            decoration: const BoxDecoration(
-              color: Color(0xFFDDFBDD),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.check_rounded,
-              color: Color(0xFF008A08),
-              size: 22,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              message,
-              style: const TextStyle(
-                color: Colors.black,
-                fontSize: 13,
-                fontWeight: FontWeight.w800,
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: Colors.white,
+        elevation: 8,
+        margin: const EdgeInsets.fromLTRB(18, 0, 18, 18),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Color(0xFFDDFBDD)),
+        ),
+        duration: const Duration(seconds: 2),
+        content: Row(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: const BoxDecoration(
+                color: Color(0xFFDDFBDD),
+                shape: BoxShape.circle,
               ),
-            ),
-          ),
-          InkWell(
-            onTap: () {
-              ScaffoldMessenger.of(context).hideCurrentSnackBar();
-            },
-            borderRadius: BorderRadius.circular(99),
-            child: const Padding(
-              padding: EdgeInsets.all(4),
-              child: Icon(
-                Icons.close_rounded,
+              child: const Icon(
+                Icons.check_rounded,
                 color: Color(0xFF008A08),
-                size: 20,
+                size: 22,
               ),
             ),
-          ),
-        ],
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(
+                  color: Colors.black,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+            InkWell(
+              onTap: () {
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              },
+              borderRadius: BorderRadius.circular(99),
+              child: const Padding(
+                padding: EdgeInsets.all(4),
+                child: Icon(
+                  Icons.close_rounded,
+                  color: Color(0xFF008A08),
+                  size: 20,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Future<void> _editValue(String label) async {
     if (label == 'Gender') {
@@ -321,39 +323,39 @@ class _ProfileGoalScreenState extends State<ProfileGoalScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
- builder: (context) {
-  return SafeArea(
-    child: ConstrainedBox(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.72,
-      ),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 4, 20, 22),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Edit $label',
-              style: const TextStyle(
-                color: Colors.black,
-                fontSize: 18,
-                fontWeight: FontWeight.w900,
+      builder: (context) {
+        return SafeArea(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.72,
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 22),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Edit $label',
+                    style: const TextStyle(
+                      color: Colors.black,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  for (final option in options)
+                    _ProfileChoiceTile(
+                      label: option,
+                      selected: option == currentValue,
+                      onTap: () => Navigator.pop(context, option),
+                    ),
+                ],
               ),
             ),
-            const SizedBox(height: 14),
-            for (final option in options)
-              _ProfileChoiceTile(
-                label: option,
-                selected: option == currentValue,
-                onTap: () => Navigator.pop(context, option),
-              ),
-          ],
-        ),
-      ),
-    ),
-  );
-},
+          ),
+        );
+      },
     );
 
     if (selected != null) {
@@ -631,8 +633,9 @@ class _ProfileGoalScreenState extends State<ProfileGoalScreen> {
     try {
       final picked = await ImagePicker().pickImage(
         source: ImageSource.gallery,
-        maxWidth: 900,
-        imageQuality: 82,
+        maxWidth: 360,
+        maxHeight: 360,
+        imageQuality: 55,
       );
       if (picked == null) {
         return;
@@ -646,7 +649,17 @@ class _ProfileGoalScreenState extends State<ProfileGoalScreen> {
       if (!mounted) {
         return;
       }
-      setState(() => _values['Photo Url'] = url);
+      final freshProfile =
+          await UserProfileService.instance.getCurrentProfile();
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _values['Photo Url'] = url;
+        if (freshProfile != null) {
+          _applyProfile(freshProfile);
+        }
+      });
       _showMessage('Profile picture updated.');
     } catch (_) {
       if (mounted) {
@@ -657,6 +670,10 @@ class _ProfileGoalScreenState extends State<ProfileGoalScreen> {
         setState(() => _isUploadingPhoto = false);
       }
     }
+  }
+
+  void _openSettingsScreen(Widget screen) {
+    Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
   }
 
   void _openNav(int index) {
@@ -789,6 +806,48 @@ class _ProfileGoalScreenState extends State<ProfileGoalScreen> {
                               _editValue(label);
                             },
                           ),
+                        const SizedBox(height: 6),
+                        const Text(
+                          'Personalization',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        _ProfileGoalRow(
+                          item: const _ProfileGoalItem(
+                            'Food Preferences',
+                            'Diet style, allergies, foods to avoid',
+                            Icons.restaurant_menu_rounded,
+                          ),
+                          actionLabel: 'Open',
+                          onEdit: () => _openSettingsScreen(
+                            const FoodPreferenceScreen(),
+                          ),
+                        ),
+                        _ProfileGoalRow(
+                          item: const _ProfileGoalItem(
+                            'Budget',
+                            'Weekly food budget and cooking time',
+                            Icons.account_balance_wallet_rounded,
+                          ),
+                          actionLabel: 'Open',
+                          onEdit: () =>
+                              _openSettingsScreen(const BudgetScreen()),
+                        ),
+                        _ProfileGoalRow(
+                          item: const _ProfileGoalItem(
+                            'Achievements & Rating',
+                            'Badges and simple app rating',
+                            Icons.emoji_events_rounded,
+                          ),
+                          actionLabel: 'Open',
+                          onEdit: () => _openSettingsScreen(
+                            const AchievementFeedbackScreen(),
+                          ),
+                        ),
                       ],
                     ),
             ),
@@ -827,7 +886,7 @@ class _ProfileHeader extends StatelessWidget {
                   ),
                 ),
               ),
-            Tooltip(
+              Tooltip(
                 message: 'Log out',
                 decoration: BoxDecoration(
                   color: Colors.white,
@@ -846,7 +905,8 @@ class _ProfileHeader extends StatelessWidget {
                   fontSize: 12,
                   fontWeight: FontWeight.w900,
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 preferBelow: true,
                 child: IconButton(
                   onPressed: onLogout,
@@ -896,6 +956,7 @@ class _PersonalInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final photoProvider = _profileImageProvider(values['Photo Url'] ?? '');
     return Container(
       decoration: BoxDecoration(
         color: _ProfileColors.softGreen,
@@ -930,10 +991,8 @@ class _PersonalInfoCard extends StatelessWidget {
                       CircleAvatar(
                         radius: 43,
                         backgroundColor: _ProfileColors.softGreen,
-                        backgroundImage: values['Photo Url']!.isEmpty
-                            ? null
-                            : NetworkImage(values['Photo Url']!),
-                        child: values['Photo Url']!.isEmpty
+                        backgroundImage: photoProvider,
+                        child: photoProvider == null
                             ? const Icon(
                                 Icons.person_rounded,
                                 color: Color(0xFF202020),
@@ -1278,10 +1337,12 @@ class _ProfileSaveButton extends StatelessWidget {
 class _ProfileGoalRow extends StatelessWidget {
   final _ProfileGoalItem item;
   final VoidCallback onEdit;
+  final String actionLabel;
 
   const _ProfileGoalRow({
     required this.item,
     required this.onEdit,
+    this.actionLabel = 'Edit',
   });
 
   @override
@@ -1347,8 +1408,13 @@ class _ProfileGoalRow extends StatelessWidget {
             height: 32,
             child: OutlinedButton.icon(
               onPressed: onEdit,
-              icon: const Icon(Icons.edit_rounded, size: 12),
-              label: const Text('Edit'),
+              icon: Icon(
+                actionLabel == 'Edit'
+                    ? Icons.edit_rounded
+                    : Icons.chevron_right_rounded,
+                size: 12,
+              ),
+              label: Text(actionLabel),
               style: OutlinedButton.styleFrom(
                 foregroundColor: _ProfileColors.green,
                 side: const BorderSide(color: _ProfileColors.green),
@@ -1379,9 +1445,9 @@ class _ProfileNavBar extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Container(
-        height: 72,
+        height: 82,
         color: Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 10),
+        padding: const EdgeInsets.fromLTRB(10, 8, 10, 4),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
@@ -1472,8 +1538,8 @@ class _ProfileNavItem extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: color,
-                fontSize: 9,
-                fontWeight: isActive ? FontWeight.w900 : FontWeight.w700,
+                fontSize: 10,
+                fontWeight: isActive ? FontWeight.w900 : FontWeight.w800,
               ),
             ),
           ],
@@ -1491,12 +1557,31 @@ class _ProfileGoalItem {
   const _ProfileGoalItem(this.title, this.subtitle, this.icon);
 }
 
+ImageProvider? _profileImageProvider(String value) {
+  if (value.trim().isEmpty) {
+    return null;
+  }
+  if (value.startsWith('data:image')) {
+    final commaIndex = value.indexOf(',');
+    if (commaIndex == -1) {
+      return null;
+    }
+    try {
+      final bytes = base64Decode(value.substring(commaIndex + 1));
+      return MemoryImage(Uint8List.fromList(bytes));
+    } catch (_) {
+      return null;
+    }
+  }
+  return NetworkImage(value);
+}
+
 class _ProfileColors {
-  static const green = Color(0xFF008A08);
-  static const softGreen = Color(0xFFDDFBDD);
-  static const textGrey = Color(0xFF777777);
-  static const navGrey = Color(0xFFC4C4CA);
-  static const border = Color(0xFFE1E1E1);
+  static const green = Color(0xFF1F8A5B);
+  static const softGreen = Color(0xFFE7F6EE);
+  static const textGrey = Color(0xFF66736B);
+  static const navGrey = Color(0xFF9AA49E);
+  static const border = Color(0xFFE0E5E0);
 
   const _ProfileColors._();
 }

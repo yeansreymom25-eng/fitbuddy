@@ -83,7 +83,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
             const _FoodHelperHeader(),
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(22, 8, 22, 18),
+                padding: const EdgeInsets.fromLTRB(22, 18, 22, 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -130,7 +130,7 @@ class _FoodHelperHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(22, 14, 22, 4),
+      padding: const EdgeInsets.fromLTRB(22, 24, 22, 8),
       child: Row(
         children: [
           const Expanded(
@@ -161,19 +161,19 @@ class _FoodHelperHeader extends StatelessWidget {
               ],
             ),
           ),
-      Container(
-          width: 42,
-          height: 42,
-          decoration: const BoxDecoration(
-            color: FoodHelperColors.softGreen,
-            shape: BoxShape.circle,
+          Container(
+            width: 42,
+            height: 42,
+            decoration: const BoxDecoration(
+              color: FoodHelperColors.softGreen,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.auto_awesome_rounded,
+              color: FoodHelperColors.green,
+              size: 23,
+            ),
           ),
-          child: const Icon(
-            Icons.auto_awesome_rounded,
-            color: FoodHelperColors.green,
-            size: 23,
-          ),
-        ),
         ],
       ),
     );
@@ -275,7 +275,7 @@ class _IngredientChips extends StatelessWidget {
       runSpacing: 8,
       children: [
         for (final ingredient in ingredients)
-         InputChip(
+          InputChip(
             label: Text(ingredient),
             onDeleted: () => onRemove(ingredient),
             deleteIcon: Tooltip(
@@ -871,9 +871,9 @@ class _FoodHelperNavBar extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Container(
-        height: 72,
+        height: 82,
         decoration: const BoxDecoration(color: Colors.white),
-        padding: const EdgeInsets.symmetric(horizontal: 10),
+        padding: const EdgeInsets.fromLTRB(10, 8, 10, 4),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
@@ -979,8 +979,8 @@ class _FoodHelperNavItem extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: color,
-                fontSize: 9,
-                fontWeight: isActive ? FontWeight.w900 : FontWeight.w700,
+                fontSize: 10,
+                fontWeight: isActive ? FontWeight.w900 : FontWeight.w800,
               ),
             ),
           ],
@@ -999,14 +999,14 @@ class _HelperTab {
 
 class FoodHelperColors {
   static const page = Color(0xFFFFFFFF);
-  static const green = Color(0xFF008A08);
-  static const softGreen = Color(0xFFDDFBDD);
-  static const blue = Color(0xFF0D80FF);
-  static const orange = Color(0xFFFF8724);
-  static const textGrey = Color(0xFF777777);
-  static const iconGrey = Color(0xFF808080);
-  static const navGrey = Color(0xFFC4C4CA);
-  static const border = Color(0xFFE1E1E1);
+  static const green = Color(0xFF1F8A5B);
+  static const softGreen = Color(0xFFE7F6EE);
+  static const blue = Color(0xFF2B7FFF);
+  static const orange = Color(0xFFE8862E);
+  static const textGrey = Color(0xFF66736B);
+  static const iconGrey = Color(0xFF8F9A94);
+  static const navGrey = Color(0xFF9AA49E);
+  static const border = Color(0xFFE0E5E0);
 
   const FoodHelperColors._();
 }

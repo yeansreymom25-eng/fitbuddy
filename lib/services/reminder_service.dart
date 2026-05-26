@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../models/app_reminder.dart';
+import 'app_notification_service.dart';
 import 'notification_service.dart';
 
 class ReminderService {
@@ -35,15 +36,28 @@ class ReminderService {
 
   Future<String> createReminder(AppReminder reminder) async {
     final doc = await _collection().add(reminder.toFirestore());
-    await NotificationService.instance
-        .scheduleDaily(reminder.copyWith(id: doc.id));
+    final newReminder = reminder.copyWith(id: doc.id);
+    await _trySchedule(newReminder);
+    
+    // Create in-app notification
+    await AppNotificationService.instance.createReminderNotification(
+      title: 'Reminder Set: ${newReminder.title}',
+      message: 'Scheduled for ${newReminder.time}',
+    );
+    
     return doc.id;
   }
 
   Future<void> updateReminder(AppReminder reminder) async {
     await _collection().doc(reminder.id).set(
         reminder.toFirestore(includeCreatedAt: false), SetOptions(merge: true));
-    await NotificationService.instance.scheduleDaily(reminder);
+    await _trySchedule(reminder);
+    
+    // Create in-app notification
+    await AppNotificationService.instance.createReminderNotification(
+      title: 'Reminder Updated: ${reminder.title}',
+      message: 'Now set for ${reminder.time}',
+    );
   }
 
   Future<void> setEnabled(String reminderId, bool enabled) async {
@@ -59,7 +73,12 @@ class ReminderService {
       final reminder =
           AppReminder.fromFirestore(snapshot).copyWith(enabled: enabled);
       if (enabled) {
-        await NotificationService.instance.scheduleDaily(reminder);
+        await _trySchedule(reminder);
+        // Create in-app notification
+        await AppNotificationService.instance.createReminderNotification(
+          title: 'Reminder Active: ${reminder.title}',
+          message: 'Notification scheduled for ${reminder.time}',
+        );
       } else {
         await NotificationService.instance.cancel(reminder);
       }
@@ -86,88 +105,30 @@ class ReminderService {
     final existing = await _collection().limit(1).get();
     if (existing.docs.isNotEmpty) {
       await _scheduleEnabledReminders();
-      await _userDoc().set(
-        {
-          'remindersSeeded': true,
-          'updatedAt': FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true),
-      );
-      return;
     }
-
-    final defaults = [
-      const AppReminder(
-        id: '',
-        title: 'Drink Water',
-        note: 'Drink a glass of water',
-        time: '8 AM',
-        category: 'Water',
-      ),
-      const AppReminder(
-        id: '',
-        title: 'Drink Water',
-        note: 'Drink a glass of water',
-        time: '10 AM',
-        category: 'Water',
-      ),
-      const AppReminder(
-        id: '',
-        title: 'Lunch Time',
-        note: 'Eat a healthy and balanced meal',
-        time: '11 AM',
-        category: 'Nutrition',
-      ),
-      const AppReminder(
-        id: '',
-        title: 'Sleep Reminder',
-        note: 'Wind down and get ready for bed',
-        time: '10:30 PM',
-        category: 'Sleep',
-      ),
-      const AppReminder(
-        id: '',
-        title: 'Wakeup Reminder',
-        note: 'Wake up early for exercise',
-        time: '6:30 AM',
-        category: 'Sleep',
-      ),
-      const AppReminder(
-        id: '',
-        title: 'Activity Time',
-        note: 'Time to move your body',
-        time: '6 PM',
-        category: 'Activity',
-      ),
-    ];
-
-    final batch = _firestore.batch();
-    final scheduled = <AppReminder>[];
-    for (final reminder in defaults) {
-      final doc = _collection().doc();
-      batch.set(doc, reminder.toFirestore());
-      scheduled.add(reminder.copyWith(id: doc.id));
-    }
-    batch.set(
-      _userDoc(),
+    await _userDoc().set(
       {
         'remindersSeeded': true,
         'updatedAt': FieldValue.serverTimestamp(),
       },
       SetOptions(merge: true),
     );
-    await batch.commit();
-    for (final reminder in scheduled) {
-      await NotificationService.instance.scheduleDaily(reminder);
-    }
   }
 
   Future<void> _scheduleEnabledReminders() async {
     final reminders =
         await _collection().where('enabled', isEqualTo: true).get();
     for (final doc in reminders.docs) {
-      await NotificationService.instance
-          .scheduleDaily(AppReminder.fromFirestore(doc));
+      await _trySchedule(AppReminder.fromFirestore(doc));
+    }
+  }
+
+  Future<void> _trySchedule(AppReminder reminder) async {
+    try {
+      await NotificationService.instance.scheduleDaily(reminder);
+    } catch (_) {
+      // Keep Firestore reminder changes working even when Android notification
+      // permission, exact-alarm permission, or channel setup is unavailable.
     }
   }
 }

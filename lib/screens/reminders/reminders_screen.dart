@@ -30,17 +30,6 @@ class _RemindersScreenState extends State<RemindersScreen> {
   void initState() {
     super.initState();
     _reminderStream = ReminderService.instance.watchReminders();
-    _seedDefaultReminders();
-  }
-
-  Future<void> _seedDefaultReminders() async {
-    try {
-      await ReminderService.instance.ensureDefaultReminders();
-    } catch (_) {
-      if (mounted) {
-        _showMessage('Unable to prepare reminders right now.');
-      }
-    }
   }
 
   List<AppReminder> _visibleReminders(List<AppReminder> reminders) {
@@ -58,11 +47,7 @@ class _RemindersScreenState extends State<RemindersScreen> {
         behavior: SnackBarBehavior.floating,
         backgroundColor: Colors.white,
         elevation: 8,
-        margin: EdgeInsets.only(
-          left: 18,
-          right: 18,
-          bottom: MediaQuery.of(context).size.height - 170,
-        ),
+        margin: const EdgeInsets.fromLTRB(18, 0, 18, 18),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
           side: const BorderSide(color: _ReminderColors.softGreen),
@@ -125,8 +110,8 @@ class _RemindersScreenState extends State<RemindersScreen> {
   Future<void> _openReminderEditor({AppReminder? reminder}) async {
     final titleController = TextEditingController(text: reminder?.title ?? '');
     final noteController = TextEditingController(text: reminder?.note ?? '');
-    final timeController =
-        TextEditingController(text: reminder?.time ?? '7 AM');
+    var selectedTime =
+        _parseTimeOfDay(reminder?.time) ?? const TimeOfDay(hour: 7, minute: 0);
     var category = reminder?.category ?? 'Water';
     final isEditing = reminder != null;
 
@@ -174,10 +159,17 @@ class _RemindersScreenState extends State<RemindersScreen> {
                       hint: 'Drink a glass of water',
                     ),
                     const SizedBox(height: 10),
-                    _ReminderTextField(
-                      controller: timeController,
-                      label: 'Time',
-                      hint: '8 AM',
+                    _ReminderTimeButton(
+                      label: _formatTimeOfDay(selectedTime),
+                      onTap: () async {
+                        final picked = await showTimePicker(
+                          context: context,
+                          initialTime: selectedTime,
+                        );
+                        if (picked != null) {
+                          setSheetState(() => selectedTime = picked);
+                        }
+                      },
                     ),
                     const SizedBox(height: 12),
                     Wrap(
@@ -247,9 +239,7 @@ class _RemindersScreenState extends State<RemindersScreen> {
           id: '',
           title: title,
           note: note,
-          time: timeController.text.trim().isEmpty
-              ? '7 AM'
-              : timeController.text.trim(),
+          time: _formatTimeOfDay(selectedTime),
           category: category,
           enabled: reminder?.enabled ?? true,
           repeat: reminder?.repeat ?? 'Daily',
@@ -273,7 +263,6 @@ class _RemindersScreenState extends State<RemindersScreen> {
 
     titleController.dispose();
     noteController.dispose();
-    timeController.dispose();
   }
 
   Future<void> _toggleReminder(AppReminder reminder, bool value) async {
@@ -326,6 +315,7 @@ class _RemindersScreenState extends State<RemindersScreen> {
         child: Column(
           children: [
             _ReminderHeader(onAdd: _addReminder),
+            const SizedBox(height: 8),
             _FilterBar(
               filters: _filters,
               selectedIndex: _selectedFilter,
@@ -353,7 +343,7 @@ class _RemindersScreenState extends State<RemindersScreen> {
 
                   final reminders = _visibleReminders(snapshot.data ?? []);
                   return ListView(
-                    padding: const EdgeInsets.fromLTRB(22, 12, 22, 18),
+                    padding: const EdgeInsets.fromLTRB(22, 18, 22, 24),
                     children: [
                       const Text(
                         'Upcoming Reminders',
@@ -365,10 +355,13 @@ class _RemindersScreenState extends State<RemindersScreen> {
                       ),
                       const SizedBox(height: 10),
                       if (reminders.isEmpty)
-                        const _ReminderStateMessage(
+                        _ReminderStateMessage(
                           icon: Icons.notifications_none_rounded,
-                          title: 'No reminders yet',
-                          message: 'Add one to keep your routine on track.',
+                          title: 'Create your first reminder',
+                          message:
+                              'New users can choose their own water, meal, activity, or sleep reminder time.',
+                          actionLabel: 'Add Reminder',
+                          onAction: _addReminder,
                         )
                       else
                         for (final reminder in reminders)
@@ -400,7 +393,7 @@ class _ReminderHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 14, 22, 8),
+      padding: const EdgeInsets.fromLTRB(18, 24, 22, 8),
       child: Row(
         children: [
           const Expanded(
@@ -728,11 +721,15 @@ class _ReminderStateMessage extends StatelessWidget {
   final IconData icon;
   final String title;
   final String message;
+  final String? actionLabel;
+  final VoidCallback? onAction;
 
   const _ReminderStateMessage({
     required this.icon,
     required this.title,
     required this.message,
+    this.actionLabel,
+    this.onAction,
   });
 
   @override
@@ -762,7 +759,74 @@ class _ReminderStateMessage extends StatelessWidget {
               fontWeight: FontWeight.w700,
             ),
           ),
+          if (actionLabel != null && onAction != null) ...[
+            const SizedBox(height: 14),
+            ElevatedButton.icon(
+              onPressed: onAction,
+              icon: const Icon(Icons.add_rounded, size: 18),
+              label: Text(actionLabel!),
+              style: ElevatedButton.styleFrom(
+                elevation: 0,
+                backgroundColor: _ReminderColors.green,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ],
         ],
+      ),
+    );
+  }
+}
+
+class _ReminderTimeButton extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+
+  const _ReminderTimeButton({
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        height: 54,
+        decoration: BoxDecoration(
+          color: const Color(0xFFF7F9F7),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: _ReminderColors.border),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        child: Row(
+          children: [
+            const Icon(Icons.schedule_rounded, color: _ReminderColors.green),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'Reminder Time',
+                style: TextStyle(
+                  color: _ReminderColors.textGrey,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.black,
+                fontSize: 14,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -807,9 +871,9 @@ class _ReminderNavBar extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Container(
-        height: 72,
+        height: 82,
         color: Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 10),
+        padding: const EdgeInsets.fromLTRB(10, 8, 10, 4),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
@@ -884,8 +948,8 @@ class _ReminderNavItem extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: color,
-                fontSize: 9,
-                fontWeight: isActive ? FontWeight.w900 : FontWeight.w700,
+                fontSize: 10,
+                fontWeight: isActive ? FontWeight.w900 : FontWeight.w800,
               ),
             ),
           ],
@@ -893,6 +957,38 @@ class _ReminderNavItem extends StatelessWidget {
       ),
     );
   }
+}
+
+TimeOfDay? _parseTimeOfDay(String? value) {
+  if (value == null) {
+    return null;
+  }
+  final match =
+      RegExp(r'^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?$', caseSensitive: false)
+          .firstMatch(value.trim());
+  if (match == null) {
+    return null;
+  }
+  var hour = int.tryParse(match.group(1) ?? '') ?? 7;
+  final minute = int.tryParse(match.group(2) ?? '0') ?? 0;
+  final period = match.group(3)?.toUpperCase();
+  if (period == 'PM' && hour < 12) {
+    hour += 12;
+  } else if (period == 'AM' && hour == 12) {
+    hour = 0;
+  }
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+    return null;
+  }
+  return TimeOfDay(hour: hour, minute: minute);
+}
+
+String _formatTimeOfDay(TimeOfDay time) {
+  final hour12 = time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod;
+  final minute =
+      time.minute == 0 ? '' : ':${time.minute.toString().padLeft(2, '0')}';
+  final period = time.period == DayPeriod.am ? 'AM' : 'PM';
+  return '$hour12$minute $period';
 }
 
 _ReminderStyle _styleForCategory(String category) {
@@ -935,15 +1031,15 @@ class _ReminderStyle {
 }
 
 class _ReminderColors {
-  static const green = Color(0xFF008A08);
-  static const softGreen = Color(0xFFDDFBDD);
-  static const blue = Color(0xFF149BFF);
-  static const orange = Color(0xFFFF8724);
-  static const purple = Color(0xFF9C1BA6);
-  static const textGrey = Color(0xFF777777);
-  static const iconGrey = Color(0xFF808080);
-  static const navGrey = Color(0xFFC4C4CA);
-  static const border = Color(0xFFE1E1E1);
+  static const green = Color(0xFF1F8A5B);
+  static const softGreen = Color(0xFFE7F6EE);
+  static const blue = Color(0xFF2B7FFF);
+  static const orange = Color(0xFFE8862E);
+  static const purple = Color(0xFF7B4CE0);
+  static const textGrey = Color(0xFF66736B);
+  static const iconGrey = Color(0xFF8F9A94);
+  static const navGrey = Color(0xFF9AA49E);
+  static const border = Color(0xFFE0E5E0);
 
   const _ReminderColors._();
 }

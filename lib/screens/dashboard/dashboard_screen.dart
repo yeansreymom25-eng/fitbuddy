@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 import '../../models/daily_progress.dart';
 import '../../models/meal_plan.dart';
 import '../../models/user_profile.dart';
+import '../../services/app_notification_service.dart';
 import '../../services/daily_progress_service.dart';
 import '../../services/meal_plan_service.dart';
 import '../../services/motivation_service.dart';
 import '../../services/user_profile_service.dart';
+import '../../widgets/notification_sheet.dart';
 import '../meal/meal_plan_screen.dart';
 import '../profile/profile_goal_screen.dart';
 import '../progress/progress_screen.dart';
@@ -77,18 +79,14 @@ class _DashboardBody extends StatelessWidget {
     return mins == 0 ? '${hours}h' : '${hours}h ${mins}m';
   }
 
-void _message(BuildContext context, String text) {
+  void _message(BuildContext context, String text) {
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         behavior: SnackBarBehavior.floating,
         backgroundColor: Colors.white,
         elevation: 8,
-        margin: EdgeInsets.only(
-          left: 18,
-          right: 18,
-          bottom: MediaQuery.of(context).size.height - 170,
-        ),
+        margin: const EdgeInsets.fromLTRB(18, 0, 18, 18),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
           side: const BorderSide(color: Color(0xFFDDFBDD)),
@@ -124,7 +122,7 @@ void _message(BuildContext context, String text) {
         ),
       ),
     );
-}
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -141,7 +139,7 @@ void _message(BuildContext context, String text) {
             _Header(name: firstName),
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 18),
+                padding: const EdgeInsets.fromLTRB(20, 18, 20, 22),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -166,6 +164,12 @@ void _message(BuildContext context, String text) {
                     ),
                     const SizedBox(height: 12),
                     _RecommendationsRow(recommendations: recommendations),
+                    const SizedBox(height: 16),
+                    _InputQualityCard(
+                      progress: progress,
+                      recommendations: recommendations,
+                      mealGoal: mealGoal,
+                    ),
                     const SizedBox(height: 16),
                     _MealCard(
                       meals: meals,
@@ -268,8 +272,9 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final greeting = _timeGreeting();
     return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 14, 18, 6),
+      padding: const EdgeInsets.fromLTRB(18, 24, 18, 10),
       child: Row(
         children: [
           Expanded(
@@ -277,7 +282,7 @@ class _Header extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Good Morning $name',
+                  '$greeting $name',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -301,24 +306,70 @@ class _Header extends StatelessWidget {
               ],
             ),
           ),
-          IconButton(
-            tooltip: '',
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const RemindersScreen()),
-            ),
-            icon: const Icon(
-              Icons.notifications_none_rounded,
-              color: DashboardColors.green,
-            ),
-            style: IconButton.styleFrom(
-              backgroundColor: DashboardColors.softGreen,
-              shape: const CircleBorder(),
-            ),
+          StreamBuilder<int>(
+            stream: AppNotificationService.instance.watchUnreadCount(),
+            builder: (context, snapshot) {
+              final unreadCount = snapshot.data ?? 0;
+              return Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  IconButton(
+                    tooltip: '',
+                    onPressed: () => NotificationSheet.show(context),
+                    icon: const Icon(
+                      Icons.notifications_none_rounded,
+                      color: DashboardColors.green,
+                    ),
+                    style: IconButton.styleFrom(
+                      backgroundColor: DashboardColors.softGreen,
+                      shape: const CircleBorder(),
+                    ),
+                  ),
+                  if (unreadCount > 0)
+                    Positioned(
+                      right: 6,
+                      top: 6,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFFF3B30),
+                          shape: BoxShape.circle,
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 18,
+                          minHeight: 18,
+                        ),
+                        child: Text(
+                          unreadCount > 9 ? '9+' : '$unreadCount',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w900,
+                            height: 1,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
           ),
         ],
       ),
     );
   }
+}
+
+String _timeGreeting() {
+  final hour = DateTime.now().hour;
+  if (hour < 12) {
+    return 'Good Morning';
+  }
+  if (hour < 17) {
+    return 'Good Afternoon';
+  }
+  return 'Good Evening';
 }
 
 class _ProgressSection extends StatelessWidget {
@@ -595,6 +646,118 @@ class _MealCard extends StatelessWidget {
   }
 }
 
+class _InputQualityCard extends StatelessWidget {
+  final DailyProgress progress;
+  final UserRecommendations recommendations;
+  final int mealGoal;
+
+  const _InputQualityCard({
+    required this.progress,
+    required this.recommendations,
+    required this.mealGoal,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final checks = [
+      _QualityCheck(
+        'Meals',
+        progress.completedMealIds.length >= (mealGoal / 2).ceil(),
+        '${progress.completedMealIds.length}/$mealGoal logged',
+      ),
+      _QualityCheck(
+        'Water',
+        progress.waterMl >= recommendations.waterMl * .5,
+        '${progress.waterMl}/${recommendations.waterMl} ml',
+      ),
+      _QualityCheck(
+        'Exercise',
+        progress.exerciseMinutes >= recommendations.exerciseMinutes * .5,
+        '${progress.exerciseMinutes}/${recommendations.exerciseMinutes} min',
+      ),
+    ];
+    final goodCount = checks.where((item) => item.good).length;
+    final status = goodCount >= 2 ? 'Your inputs look good' : 'Needs more logs';
+    final color =
+        goodCount >= 2 ? DashboardColors.green : DashboardColors.orange;
+
+    return _Surface(
+      color: const Color(0xFFF4FAF6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: color.withValues(alpha: .14),
+                child: Icon(
+                  goodCount >= 2
+                      ? Icons.verified_rounded
+                      : Icons.tips_and_updates_rounded,
+                  color: color,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  status,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          for (final check in checks)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 7),
+              child: Row(
+                children: [
+                  Icon(
+                    check.good
+                        ? Icons.check_circle_rounded
+                        : Icons.radio_button_unchecked_rounded,
+                    color: check.good
+                        ? DashboardColors.green
+                        : DashboardColors.textGrey,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      check.label,
+                      style: const TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                  ),
+                  Text(
+                    check.value,
+                    style: const TextStyle(
+                      color: DashboardColors.textGrey,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _QualityCheck {
+  final String label;
+  final bool good;
+  final String value;
+
+  const _QualityCheck(this.label, this.good, this.value);
+}
+
 class _TrackerCard extends StatelessWidget {
   final String title;
   final String subtitle;
@@ -765,9 +928,9 @@ class _DashboardNavBar extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Container(
-        height: 72,
+        height: 82,
         color: Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 10),
+        padding: const EdgeInsets.fromLTRB(10, 8, 10, 4),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
@@ -832,8 +995,8 @@ class _NavItem extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: color,
-                fontSize: 9,
-                fontWeight: isActive ? FontWeight.w900 : FontWeight.w700,
+                fontSize: 10,
+                fontWeight: isActive ? FontWeight.w900 : FontWeight.w800,
               ),
             ),
           ],
@@ -845,15 +1008,15 @@ class _NavItem extends StatelessWidget {
 
 class DashboardColors {
   static const page = Color(0xFFFFFFFF);
-  static const green = Color(0xFF008A08);
-  static const softGreen = Color(0xFFDDFBDD);
-  static const mealGreen = Color(0xFFE0FCE0);
-  static const blue = Color(0xFF149BFF);
-  static const purple = Color(0xFF9C1BA6);
-  static const orange = Color(0xFFFF8724);
-  static const motivationPink = Color(0xFFECCFEB);
-  static const textGrey = Color(0xFF777777);
-  static const navGrey = Color(0xFFC4C4CA);
+  static const green = Color(0xFF1F8A5B);
+  static const softGreen = Color(0xFFE7F6EE);
+  static const mealGreen = Color(0xFFEAF7F0);
+  static const blue = Color(0xFF2B7FFF);
+  static const purple = Color(0xFF7B4CE0);
+  static const orange = Color(0xFFE8862E);
+  static const motivationPink = Color(0xFFF3E8F7);
+  static const textGrey = Color(0xFF66736B);
+  static const navGrey = Color(0xFF9AA49E);
 
   const DashboardColors._();
 }
